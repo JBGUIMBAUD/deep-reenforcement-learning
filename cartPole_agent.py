@@ -14,7 +14,7 @@ from wrappers import GreyScale_Resize, FrameSkippingMaxing, StackFrames
 
 
 class Agent:
-    def __init__(self, action_space, observation_space, learning_rate, alpha=0.01):
+    def __init__(self, action_space, observation_space, learning_rate, alpha=0.01, from_file=False):
         self.alpha = alpha
         self.action_space = action_space
         self.observation_space = observation_space
@@ -22,6 +22,11 @@ class Agent:
         self.q_network = QNetwork(observation_space.shape[0], action_space.n, 0, 64, 64)
         # self.target_network = copy.deepcopy(self.q_network)
         self.target_network = QNetwork(observation_space.shape[0], action_space.n, 0, 64, 64)
+
+        if from_file:
+            print("Reading weights from file")
+            self.q_network.load_state_dict(torch.load("saved_params/cart_pole.pt"))
+
         self.optimizer = optimizer.Adam(self.q_network.parameters(), lr=learning_rate)
         if torch.cuda.is_available():
             self.device = "cuda:0"
@@ -57,12 +62,11 @@ class Agent:
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(
             self.device)
 
-        for e in experiences:
-            if e is not None:
-                print(e.state)
-        print("sates: ", states.shape)
-        print("actions: ", actions.shape)
-
+        # for e in experiences:
+        #     if e is not None:
+        #         print(e.state)
+        # print("sates: ", states.shape)
+        # print("actions: ", actions.shape)
 
         criterion = torch.nn.MSELoss()
         self.q_network.train()
@@ -101,3 +105,6 @@ class Agent:
         for target_param, local_param in zip(self.target_network.parameters(),
                                              self.q_network.parameters()):
             target_param.data.copy_(self.alpha * local_param.data + (1 - self.alpha) * target_param.data)
+
+    def save_param(self):
+        torch.save(self.q_network.state_dict(), "saved_params/cart_pole.pt")
