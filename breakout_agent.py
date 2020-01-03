@@ -14,13 +14,19 @@ from wrappers import GreyScale_Resize, FrameSkippingMaxing, StackFrames
 
 
 class Agent:
-    def __init__(self, action_space, observation_space, learning_rate, alpha=0.01):
+    def __init__(self, action_space, observation_space, learning_rate, alpha=0.005, from_file=False):
         self.alpha = alpha
         self.action_space = action_space
         self.observation_space = observation_space
 
-        self.q_network = ConvQNetwork(4)
-        self.target_network = ConvQNetwork(4)
+        self.q_network = ConvQNetwork(2)
+        self.target_network = ConvQNetwork(2)
+
+        if from_file:
+            print("Reading weights from file")
+            self.q_network.load_state_dict(torch.load("saved_params/breakout.pt"))
+
+        # self.optimizer = optimizer.RMSprop(self.q_network.parameters(), lr=learning_rate)
         self.optimizer = optimizer.Adam(self.q_network.parameters(), lr=learning_rate)
         if torch.cuda.is_available():
             self.device = "cuda:0"
@@ -31,7 +37,8 @@ class Agent:
 
     def act(self, observation, epsilon_):
         observation = np.swapaxes(observation, 0, 2)
-        observation = torch.from_numpy(observation).float().unsqueeze(0).to(self.device)
+        observation = np.swapaxes(observation, 2, 1)
+        observation = torch.from_numpy(observation).float().unsqueeze(0).to(self.device) / 255.
         # observation = self.obs_to_torch(observation)
         self.q_network.eval()
         # print(observation.shape)
@@ -40,9 +47,9 @@ class Agent:
         # print(q_actions)
         self.q_network.train()
         if random.random() > epsilon_:
-            return np.argmax(q_actions.cpu().data.numpy())
+            return np.argmax(q_actions.cpu().data.numpy()) + 2
         else:
-            return random.choice(np.arange(self.action_space.n))
+            return random.choice(np.arange(2)) + 2
 
     def learn(self, experiences, horizon):
         """Update value parameters using given batch of experience tuples.
@@ -52,14 +59,13 @@ class Agent:
             gamma (float): discount factor
         """
         states = torch.from_numpy(np.vstack([[e.state] for e in experiences if e is not None]).swapaxes(3, 1)
-                                  .swapaxes(3, 2)).float().to(self.device)
+                                  .swapaxes(3, 2)).float().to(self.device) / 255.
         actions = torch.from_numpy(np.vstack([e.action for e in experiences if e is not None])).long().to(self.device)
         next_states = torch.from_numpy(np.vstack([[e.next_state] for e in experiences if e is not None]).swapaxes(3, 1)
-                                       .swapaxes(3, 2)).float().to(self.device)
+                                       .swapaxes(3, 2)).float().to(self.device) / 255.
         rewards = torch.from_numpy(np.vstack([e.reward for e in experiences if e is not None])).float().to(self.device)
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(
             self.device)
-
 
         # for e in experiences:
         #     if e is not None:
@@ -74,7 +80,7 @@ class Agent:
         # shape of output from the model (batch_size,action_dim) = (64,4)
         self.optimizer.zero_grad()
         # print(states.shape)
-        predicted_targets = self.q_network(states).gather(1, actions)
+        predicted_targets = self.q_network(states).gather(1, actions - 2)
         # predicted_targets = self.q_network(states)
 
         with torch.no_grad():
@@ -117,3 +123,6 @@ class Agent:
         obs = np.swapaxes(obs, 0, 2)
         obs = np.swapaxes(obs, 2, 1)
         return torch.tensor(obs, dtype=torch.float32, device=self.device).unsqueeze(1) / 255.
+
+    def save_param(self):
+        torch.save(self.q_network.state_dict(), "saved_params/breakout.pt")

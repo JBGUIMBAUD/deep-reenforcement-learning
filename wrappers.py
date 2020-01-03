@@ -42,7 +42,6 @@ class FrameSkippingMaxing(gym.Wrapper):
         super().__init__(env)
         self._gap = 4
         self._obs_buffer = np.zeros((2,) + env.observation_space.shape, dtype=np.uint8)
-        print(self._obs_buffer.shape)
 
     def step(self, action):
         total_reward = 0.0
@@ -67,7 +66,7 @@ class FrameSkippingMaxing(gym.Wrapper):
 
 class StackFrames(gym.Wrapper):
     def __init__(self, env, k=4):
-        gym.Wrapper.__init__(self, env)
+        super().__init__(env)
         self._k = k
         self._frames = deque([], maxlen=k)
         shape = env.observation_space.shape
@@ -91,7 +90,7 @@ class NoopReset(gym.Wrapper):
         """Sample initial states by taking random number of no-ops on reset.
         No-op is assumed to be action 0.
         """
-        gym.Wrapper.__init__(self, env)
+        super().__init__(env)
         self.noop_max = noop_max
         self.override_num_noops = None
         self.noop_action = 0
@@ -119,7 +118,7 @@ class NoopReset(gym.Wrapper):
 class FireReset(gym.Wrapper):
     def __init__(self, env):
         """Fire at reset"""
-        gym.Wrapper.__init__(self, env)
+        super().__init__(env)
 
     def reset(self, **kwargs):
         self.env.reset(**kwargs)
@@ -137,7 +136,7 @@ class EpisodicLife(gym.Wrapper):
         """Make end-of-life == end-of-episode, but only reset on true game over.
         Done by DeepMind for the DQN and co. since it helps value estimation.
         """
-        gym.Wrapper.__init__(self, env)
+        super().__init__(env)
         self.lives = 0
         self.was_real_done = True
 
@@ -171,7 +170,7 @@ class EpisodicLife(gym.Wrapper):
 
 class ClipRewardEnv(gym.RewardWrapper):
     def __init__(self, env):
-        gym.RewardWrapper.__init__(self, env)
+        super().__init__(env)
 
     def reward(self, reward):
         """Bin reward to {+1, 0, -1} by its sign."""

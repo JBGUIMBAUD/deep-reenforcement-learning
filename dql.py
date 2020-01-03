@@ -1,3 +1,4 @@
+import argparse
 import sys
 import gym
 import torch
@@ -9,29 +10,26 @@ from gym import wrappers, logger
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim as optimizer
-import copy
-from wrappers import GreyScale_Resize, FrameSkippingMaxing, StackFrames, FireReset, EpisodicLife, ClipRewardEnv
+from wrappers import GreyScale_Resize, FrameSkippingMaxing, StackFrames, FireReset, EpisodicLife, ClipRewardEnv, NoopReset
 from breakout_agent import Agent as BAgent
 from cartPole_agent import Agent
 
-if __name__ == '__main__':
-    CART_POLE = False
 
+def main(environment):
     BUFFER_SIZE = 50000
     BATCH_SIZE = 64  # mini-batch size
     GAMMA = 0.99  # discount factor
     ALPHA = 0.01  # for soft update of target parameters
     LEARNING_RATE = 5e-4  # learning rate
     UPDATE_EVERY = 2  # how often to update the network
-    MAX_EPISODE_LEN = 1000
 
     # You can set the level to logger.DEBUG or logger.WARN if you
     # want to change the amount of output.
     logger.set_level(logger.INFO)
 
-    if CART_POLE:
+    if environment == "CartPole-v1":
         env = gym.make("CartPole-v1")
-        outdir = '/tmp/cartpole-agent-results'
+        outdir = 'logs/cartpole-agent-results'
         agent = Agent(env.action_space, env.observation_space, LEARNING_RATE, ALPHA)
     else:
         env = gym.make("BreakoutNoFrameskip-v4")
@@ -40,22 +38,17 @@ if __name__ == '__main__':
         env = FrameSkippingMaxing(env)
         env = StackFrames(env)
         # Optimisation wrappers
-        # env = NoopReset(env)
-        env = FireReset(env)
+        env = NoopReset(env)
         env = EpisodicLife(env)
+        env = FireReset(env)
         env = ClipRewardEnv(env)
-        outdir = '/tmp/breakout-agent-results'
+        outdir = 'logs/breakout-agent-results'
         agent = BAgent(env.action_space, env.observation_space, LEARNING_RATE, ALPHA)
 
-    # You provide the directory to write to (can be an existing
-    # directory, including one with existing data -- all monitor files
-    # will be namespaced). You can also dump to a tempdir if you'd
-    # like: tempfile.mkdtemp().
     env = wrappers.Monitor(env, directory=outdir, force=True)
     env.seed(0)
 
     episode_count = 1000
-    reward = 0
     score = [0]
     buffer = ReplayMemory(BUFFER_SIZE)
     learn = 0
@@ -65,9 +58,8 @@ if __name__ == '__main__':
     for i in range(episode_count):
         if i % 100 == 0:
             print("episode: ", i)
+        # print("episode: ", i)
         state = env.reset()
-        # state = state.reshape(-1, state.shape[-1])
-        # print(state.shape)
         sum_reward = 0
         # for _ in range(MAX_EPISODE_LEN):
         while True:
@@ -85,23 +77,26 @@ if __name__ == '__main__':
                 sample = buffer.sample(BATCH_SIZE)
                 agent.learn(sample, GAMMA)
 
-            # print("{0} position {1}".format(buffer[counter], str(counter)))
-            # counter = (counter + 1) % bufferSize
             if done:
                 score = score + [sum_reward]
                 break
             if epsilon > epsilon_min:
                 epsilon = epsilon * epsilon_decay
-
-            # Note there's no env.render() here. But the environment still can open window and
-            # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
-            # Video is not recorded every episode, see capped_cubic_video_schedule for details.
-
-    # sample = buffer.sample(BATCH_SIZE)
-    # print(len(sample))
+            # env.render()
 
     # Close the env and write monitor result info to disk
     env.close()
     plt.plot(score)
     plt.ylabel('Rewards')
     plt.show()
+
+    # Save params into a file
+    agent.save_param()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=None)
+    parser.add_argument('env_id', nargs='?', default='BreakoutNoFrameskip-v4', help='Select the environment to run')
+    args = parser.parse_args()
+
+    main(args.env_id)
