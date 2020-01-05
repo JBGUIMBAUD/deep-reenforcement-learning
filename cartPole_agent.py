@@ -62,12 +62,6 @@ class Agent:
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(
             self.device)
 
-        # for e in experiences:
-        #     if e is not None:
-        #         print(e.state)
-        # print("sates: ", states.shape)
-        # print("actions: ", actions.shape)
-
         criterion = torch.nn.MSELoss()
         self.q_network.train()
         self.target_network.eval()
@@ -81,8 +75,6 @@ class Agent:
             labels_next = self.target_network(next_states).detach().max(1)[0].unsqueeze(1)
             # labels_next = self.q_network(next_states)
         # print(labels_next)
-
-        # .detach() ->  Returns a new Tensor, detached from the current graph.
         labels = rewards + (horizon * labels_next * (1 - dones))
         # print(labels)
 

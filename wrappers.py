@@ -10,7 +10,7 @@ cv2.ocl.setUseOpenCL(False)
 class GreyScale_Resize(gym.ObservationWrapper):
     def __init__(self, env, width=84, height=84):
         """
-        Warp frames to 84x84 as done in the Nature paper and later work.
+        Put frames in greyscales and size 84*84 .
         """
         super().__init__(env)
         self._width = width
@@ -85,36 +85,6 @@ class StackFrames(gym.Wrapper):
         return np.concatenate(self._frames, axis=2), reward, done, info
 
 
-class NoopReset(gym.Wrapper):
-    def __init__(self, env, noop_max=30):
-        """Sample initial states by taking random number of no-ops on reset.
-        No-op is assumed to be action 0.
-        """
-        super().__init__(env)
-        self.noop_max = noop_max
-        self.override_num_noops = None
-        self.noop_action = 0
-        assert env.unwrapped.get_action_meanings()[0] == 'NOOP'
-
-    def reset(self, **kwargs):
-        """ Do no-op action for a number of steps in [1, noop_max]."""
-        self.env.reset(**kwargs)
-        if self.override_num_noops is not None:
-            noops = self.override_num_noops
-        else:
-            noops = self.unwrapped.np_random.randint(1, self.noop_max + 1)  # pylint: disable=E1101
-        assert noops > 0
-        obs = None
-        for _ in range(noops):
-            obs, _, done, _ = self.env.step(self.noop_action)
-            if done:
-                obs = self.env.reset(**kwargs)
-        return obs
-
-    def step(self, ac):
-        return self.env.step(ac)
-
-
 class FireReset(gym.Wrapper):
     def __init__(self, env):
         """Fire at reset"""
@@ -143,22 +113,13 @@ class EpisodicLife(gym.Wrapper):
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
         self.was_real_done = done
-        # check current lives, make loss of life terminal,
-        # then update lives to handle bonus lives
         lives = self.env.unwrapped.ale.lives()
         if lives < self.lives and lives > 0:
-            # for Qbert sometimes we stay in lives == 0 condition for a few frames
-            # so it's important to keep lives > 0, so that we only reset once
-            # the environment advertises done.
             done = True
         self.lives = lives
         return obs, reward, done, info
 
     def reset(self, **kwargs):
-        """Reset only when lives are exhausted.
-        This way all states are still reachable even though lives are episodic,
-        and the learner need not know about any of this behind-the-scenes.
-        """
         if self.was_real_done:
             obs = self.env.reset(**kwargs)
         else:

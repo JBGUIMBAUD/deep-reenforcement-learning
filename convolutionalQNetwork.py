@@ -48,7 +48,6 @@ class Dueling_DQN(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        batch_size = x.size(0)
         x = self.relu(self.conv1(x))
         x = self.relu(self.conv2(x))
         x = self.relu(self.conv3(x))
@@ -62,35 +61,3 @@ class Dueling_DQN(nn.Module):
 
         x = val + adv - adv.mean(1).unsqueeze(1).expand(x.size(0), self.num_actions)
         return x
-
-
-def compute_loss(self, batch):
-        states, actions, rewards, next_states, dones = batch
-        states = torch.FloatTensor(states).to(self.device)
-        actions = torch.LongTensor(actions).to(self.device)
-        rewards = torch.FloatTensor(rewards).to(self.device)
-        next_states = torch.FloatTensor(next_states).to(self.device)
-        dones = torch.FloatTensor(dones).to(self.device)
-
-        curr_Q = self.model.forward(states).gather(1, actions.unsqueeze(1))
-        curr_Q = curr_Q.squeeze(1)
-        next_Q = self.model.forward(next_states)
-        max_next_Q = torch.max(next_Q, 1)[0]
-        expected_Q = rewards.squeeze(1) + self.gamma * max_next_Q
-
-        loss = self.MSE_loss(curr_Q, expected_Q)
-
-        return loss
-
-
-def update(self, batch_size):
-    batch = self.replay_buffer.sample(batch_size)
-    loss = self.compute_loss(batch)
-
-    self.optimizer.zero_grad()
-    loss.backward()
-    self.optimizer.step()
-
-
-
-

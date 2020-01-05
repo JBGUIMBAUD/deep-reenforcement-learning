@@ -10,7 +10,7 @@ from gym import wrappers, logger
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim as optimizer
-from wrappers import GreyScale_Resize, FrameSkippingMaxing, StackFrames, FireReset, EpisodicLife, ClipRewardEnv, NoopReset
+from wrappers import GreyScale_Resize, FrameSkippingMaxing, StackFrames, FireReset, EpisodicLife, ClipRewardEnv
 from breakout_agent import Agent as BAgent
 from cartPole_agent import Agent
 
@@ -38,7 +38,6 @@ def main(environment):
         env = FrameSkippingMaxing(env)
         env = StackFrames(env)
         # Optimisation wrappers
-        env = NoopReset(env)
         env = EpisodicLife(env)
         env = FireReset(env)
         env = ClipRewardEnv(env)
@@ -58,7 +57,6 @@ def main(environment):
     for i in range(episode_count):
         if i % 100 == 0:
             print("episode: ", i)
-        # print("episode: ", i)
         state = env.reset()
         sum_reward = 0
         # for _ in range(MAX_EPISODE_LEN):

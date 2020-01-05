@@ -19,9 +19,11 @@ class Agent:
         self.action_space = action_space
         self.observation_space = observation_space
 
+        # Uncomment to use standart DQN model
         # self.q_network = ConvQNetwork(2)
         # self.target_network = ConvQNetwork(2)
 
+        # Dueling DQN
         self.q_network = Dueling_DQN(2)
         self.target_network = Dueling_DQN(2)
 
@@ -29,6 +31,7 @@ class Agent:
             print("Reading weights from file")
             self.q_network.load_state_dict(torch.load("saved_params/breakout.pt"))
 
+        # Uncomment to use RMSprop optimizer instead.
         # self.optimizer = optimizer.RMSprop(self.q_network.parameters(), lr=learning_rate)
         self.optimizer = optimizer.Adam(self.q_network.parameters(), lr=learning_rate)
         if torch.cuda.is_available():
@@ -42,7 +45,6 @@ class Agent:
         observation = np.swapaxes(observation, 0, 2)
         observation = np.swapaxes(observation, 2, 1)
         observation = torch.from_numpy(observation).float().unsqueeze(0).to(self.device) / 255.
-        # observation = self.obs_to_torch(observation)
         self.q_network.eval()
         # print(observation.shape)
         with torch.no_grad():
@@ -70,13 +72,6 @@ class Agent:
         dones = torch.from_numpy(np.vstack([e.done for e in experiences if e is not None]).astype(np.uint8)).float().to(
             self.device)
 
-        # for e in experiences:
-        #     if e is not None:
-        #         print(e.state.shape)
-        #         print("---------")
-        # print("sates: ", states.shape)
-        # print("actions: ", actions.shape)
-
         criterion = torch.nn.MSELoss()
         self.q_network.train()
         self.target_network.eval()
@@ -88,11 +83,6 @@ class Agent:
 
         with torch.no_grad():
             labels_next = self.target_network(next_states).detach().max(1)[0].unsqueeze(1)
-            # print(labels_next)
-            # labels_next = self.q_network(next_states)
-        # print(labels_next)
-
-        # .detach() ->  Returns a new Tensor, detached from the current graph.
         labels = rewards + (horizon * labels_next * (1 - dones))
         # print(labels)
 
@@ -115,12 +105,6 @@ class Agent:
         for target_param, local_param in zip(self.target_network.parameters(),
                                              self.q_network.parameters()):
             target_param.data.copy_(self.alpha * local_param.data + (1 - self.alpha) * target_param.data)
-
-    # def selectBatch(buffer, batchSize):
-    #     if batchSize >= buffer.length:
-    #         return buffer
-    #     else:
-    #         return random.sample(buffer, batchSize)
 
     def obs_to_torch(self, obs):
         obs = np.swapaxes(obs, 0, 2)
