@@ -48,7 +48,7 @@ def main(environment):
     env = wrappers.Monitor(env, directory=outdir, force=True)
     env.seed(0)
 
-    episode_count = 1000
+    episode_count = 10000
     score = [0]
     buffer = ReplayMemory(BUFFER_SIZE)
     learn = 0

@@ -4,7 +4,7 @@ import torch
 import random
 from replay_memory import ReplayMemory
 from qNetwork import QNetwork
-from convolutionalQNetwork import ConvQNetwork
+from convolutionalQNetwork import ConvQNetwork, Dueling_DQN
 from gym import wrappers, logger
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,8 +19,11 @@ class Agent:
         self.action_space = action_space
         self.observation_space = observation_space
 
-        self.q_network = ConvQNetwork(2)
-        self.target_network = ConvQNetwork(2)
+        # self.q_network = ConvQNetwork(2)
+        # self.target_network = ConvQNetwork(2)
+
+        self.q_network = Dueling_DQN(2)
+        self.target_network = Dueling_DQN(2)
 
         if from_file:
             print("Reading weights from file")

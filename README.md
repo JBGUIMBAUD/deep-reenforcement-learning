@@ -62,3 +62,7 @@ pip install -r /path/to/requirements.txt
 [Mnih et al., 2015] Mnih, V., Kavukcuoglu, K., Silver, D., Rusu, A. A., Veness, J., Bellemare,
 M. G., Graves, A., Riedmiller, M., Fidjeland, A. K., Ostrovski, G., et al. (2015). Human-
 level control through deep reinforcement learning. Nature, 518(7540) :529.
+
+[Wang et al., 2015] Wang, Z., Schaul, T., Hessel, M., Van Hasselt, H., Lanctot, M., and
+De Freitas, N. (2015). Dueling network architectures for deep reinforcement learning.
+arXiv preprint arXiv :1511.06581. (voir: https://arxiv.org/abs/1511.06581)
